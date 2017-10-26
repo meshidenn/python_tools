@@ -1,7 +1,5 @@
 # -*- coding:utf-8 -*-
 
-import pandas as pd
-import datetime as dt
 import csv
 import json
 import sys
