@@ -79,4 +79,3 @@ def search_faq():
 
 # main
 search_faq()
-
