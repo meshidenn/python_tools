@@ -3,7 +3,6 @@ import glob
 import json
 import os
 import re
-import sys
 
 
 def body_proc(body):
@@ -17,21 +16,26 @@ def body_proc(body):
 
 
 def out_all(body_list, folder_name):
-    if not os.path.isdir(folder_name):
+    if not os.path.exists(folder_name):
         os.mkdir(folder_name)
-    with open(folder_name + "/all.txt",'w', encoding='utf-8') as g:
+    with open(folder_name + "/all.txt", 'w', encoding='utf-8') as g:
         for body in body_list:
             print(body, file=g)
             g.write("\n")
+
 
 def foldername(i, outfolder):
     base = ord('A')
     m, n = divmod(i, 25)
     return outfolder + "/" + chr(base + m) + chr(base + n)
 
+
 def main(args):
     infolder = args.infolder
     outfolder = args.outfolder
+    if not os.path.exists(outfolder):
+        os.mkdir(outfolder)
+    
     path = infolder + "/*.json"
     flist = glob.glob(path)
     n = 0
@@ -54,6 +58,7 @@ def main(args):
                     i = 0
                     n += 1
 
+                    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--infolder", help="designate input folder name")
