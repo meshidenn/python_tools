@@ -1,6 +1,6 @@
 #!/bin/bash
 
-root="/data/language/customer/solize/txtq/"
+root="/data/language/customer/solize/txt/"
 suffix=".txt"
 IFS=$'\n'
 for filepath in `\find /data/language/customer/solize/ -type f -name *pdf`; do
