@@ -9,6 +9,7 @@ import os
 import re
 import MeCab
 import argparse
+import sentencepiece as spm
 
 from pathlib import Path
 from nltk import tokenize
@@ -25,15 +26,19 @@ def cleanhtml(raw_html):
  
  
 class MySentences(object):
-    def __init__(self, dirname, lang):
+    def __init__(self, dirname, t_name, model_path=''):
         self.dirname = dirname
-        self.lang = lang
-        if 'en' in lang.lower():
+        self.t_name = t_name
+        if 'space' in t_name.lower():
             self.tokenizer = tokenize
-        elif 'ja' in lang.lower() or 'jp' in lang.lower():
+        elif 'mecab' in t_name.lower():
             wakati = MeCab.Tagger("-O wakati")
             wakati.parse("")
             self.tokenizer = wakati
+        elif 'spm' in t_name.lower():
+            sp = spm.SentencePieceProcessor()
+            sp.Load(model_path)
+            self.tokenizer = sp
         else:
             raise('you can only set en or (ja or jp) as lang')
  
@@ -47,12 +52,14 @@ class MySentences(object):
                     if sline == "":
                         continue
                     rline = cleanhtml(sline)
-                    if 'en' in self.lang:
+                    if 'space' in self.t_name.lower():
                         tokenized_line = ' '.join(self.tokenizer.sent_tokenize(rline))
                         tokens_line = [word for word in
                                        tokenized_line.lower().split() if word.isalpha()]
-                    elif 'ja' in lang.lower() or 'jp' in lang.lower():
+                    elif 'mecab' in self.t_name.lower():
                         tokens_line = self.tokenizer.parse(rline).strip().split(" ")
+                    elif 'spm' in self.t_name.lower():
+                        tokens_line = self.tokenizer.EncodeAsPieces(rline)
                         
                     yield tokens_line
  
@@ -61,21 +68,23 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='train w2v with gensim')
     parser.add_argument('-i', '--input', help='set input dir')
     parser.add_argument('-o', '--output', help='set output filename')
-    parser.add_argument('-l', '--lang', help='set language (english or japanese)')
+    parser.add_argument('-t', '--tokenizer', help='set language (space or macab or spm(sentencepiece)')
+    parser.add_argument('-m', '--model', help='set sentencepiece model', default='')
 
     args = parser.parse_args()
     
     data_path = args.input
-    lang = args.lang
+    t_name = args.tokenizer
+    model_path = args.model
     
     begin = time()
  
-    sentences = MySentences(data_path, lang)
+    sentences = MySentences(data_path, t_name, model_path)
     model = gensim.models.Word2Vec(sentences,
                                    size=200,
                                    window=10,
                                    min_count=10,
-                                   iter=50,
+                                   iter=30,
                                    workers=multiprocessing.cpu_count())
     # model.build_vocab(sentences)
     # sentences = MySentences(data_path, lang)
@@ -83,7 +92,7 @@ if __name__ == '__main__':
 
     output = Path(args.output)
     if not(output.parent.exists()):
-        output.mkdir(parents=True, exist_ok=True)
+        output.parent.mkdir(parents=True, exist_ok=True)
         
     model.save(args.output)
     # model.wv.save_word2vec_format('w2vformat_' + args.output,
